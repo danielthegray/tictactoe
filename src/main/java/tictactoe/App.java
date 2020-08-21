@@ -8,12 +8,11 @@ import java.util.Scanner;
 public class App {
     public static void main(String[] args) {
         TicTacToe game = new TicTacToe();
-        game.getBestMove();
 
         game.printBoard();
         while (!game.checkVictory()) {
             Scanner in = new Scanner(System.in);
-            if (game.currentPlayer == TicTacToe.O) {
+            if (game.currentPlayer == TicTacToe.X) {
                 TicTacToe.Move m = game.getBestMove();
                 game.makeMove(m.x, m.y);
             } else {
