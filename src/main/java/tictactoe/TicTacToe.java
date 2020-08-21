@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class TicTacToe {
 
@@ -72,29 +74,13 @@ public class TicTacToe {
 			}
 			return 0;
 		}
-		Map<TicTacToe, Integer> utilityMap = new HashMap<>();
-		for (TicTacToe successor: childrenStates) {
-			utilityMap.put(successor, successor.getUtility(player));
-		}
+		Stream<Integer> utilities = childrenStates.stream()//
+				.map(successor -> successor.getUtility(player));
 		if (this.currentPlayer == player) {
-			// es mi turno, entonces elegiré la mejor posibilidad
-			int maxUtility = Integer.MIN_VALUE;
-			for (Map.Entry<TicTacToe, Integer> utilityEntry: utilityMap.entrySet()) {
-				if (utilityEntry.getValue() > maxUtility) {
-					maxUtility = utilityEntry.getValue();
-				}
-			}
-			return maxUtility;
+			// it's my turn, so pick the best option for me (highest utility)
+			return utilities.max(Integer::compareTo).orElseThrow();
 		}
-
-		// es el turno de mi oponente, entonces elegirá la peor opción para mí
-		int minUtility = Integer.MAX_VALUE;
-		for (Map.Entry<TicTacToe, Integer> utilityEntry: utilityMap.entrySet()) {
-			if (utilityEntry.getValue() < minUtility) {
-				minUtility = utilityEntry.getValue();
-			}
-		}
-		return minUtility;
+		return utilities.min(Integer::compareTo).orElseThrow();
 	}
 
 	public static class Move {
