@@ -13,8 +13,14 @@ public class App {
         while (!game.checkVictory()) {
             Scanner in = new Scanner(System.in);
             if (game.currentPlayer == TicTacToe.X) {
-                TicTacToe.Move m = game.getBestMove();
-                game.makeMove(m.x, m.y);
+                long startTime = System.currentTimeMillis();
+                TicTacToe.Move move=null;
+                for (int i=0; i<60;i++) {
+                    //move = game.getBestMoveRecursive();
+                    move = game.clone().getBestMove();
+                }
+                System.out.println("The bot took " + ((System.currentTimeMillis() - startTime)/60) + " ms to calculate its move");
+                game.makeMove(move.x, move.y);
             } else {
                 System.out.print("[" + game.currentPlayer + "] Input X for new move: ");
                 int x = in.nextInt();

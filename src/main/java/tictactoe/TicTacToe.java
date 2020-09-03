@@ -1,10 +1,10 @@
 package tictactoe;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.Comparator;
+import java.util.LinkedList;
 import java.util.List;
-import java.util.Map;
-import java.util.stream.Collectors;
+import java.util.function.Predicate;
 import java.util.stream.Stream;
 
 public class TicTacToe {
@@ -14,7 +14,8 @@ public class TicTacToe {
 	char currentPlayer;
 	Move moveFromParent;
 	TicTacToe parentState;
-	List<TicTacToe> childrenStates;
+	List<TicTacToe> childrenStates = null;
+	Integer utilityOfState = null;
 
 	public static final char EMPTY = ' ';
 	public static final char X = 'X';
@@ -62,7 +63,7 @@ public class TicTacToe {
 		this.childrenStates = successors;
 	}
 
-	public int getUtility(char player) {
+	public int getUtilityRecursive(char player) {
 		generateSuccessors();
 		if (childrenStates.isEmpty()) {
 			if (checkVictory()) {
@@ -75,7 +76,7 @@ public class TicTacToe {
 			return 0;
 		}
 		Stream<Integer> utilities = childrenStates.stream()//
-				.map(successor -> successor.getUtility(player));
+				.map(successor -> successor.getUtilityRecursive(player));
 		if (this.currentPlayer == player) {
 			// it's my turn, so pick the best option for me (highest utility)
 			return utilities.max(Integer::compareTo).orElseThrow();
@@ -93,18 +94,57 @@ public class TicTacToe {
 		}
 	}
 
-	public Move getBestMove() {
+	public Move getBestMoveRecursive() {
 		generateSuccessors();
 		int maxUtility = Integer.MIN_VALUE;
 		Move bestMove = null;
 		for (TicTacToe successor : childrenStates) {
-			int utility = successor.getUtility(this.currentPlayer);
+			int utility = successor.getUtilityRecursive(this.currentPlayer);
 			if (maxUtility < utility) {
 				maxUtility = utility;
 				bestMove = successor.moveFromParent;
 			}
 		}
 		return bestMove;
+	}
+
+	public Move getBestMove() {
+		char rootPlayer = currentPlayer;
+		TicTacToe currentState = this;
+		Predicate<TicTacToe> childHasNullUtility = child -> child.utilityOfState == null;
+		while (currentState != null) {
+			if (currentState.childrenStates == null) {
+				currentState.generateSuccessors();
+			}
+			if (currentState.childrenStates.isEmpty()
+					// limite de profundidad?
+			) {
+				if (currentState.checkVictory()) {
+					if (currentState.currentPlayer == rootPlayer) {
+						currentState.utilityOfState = 1;
+					} else {
+						currentState.utilityOfState = -1;
+					}
+				} else {
+					currentState.utilityOfState = 0;
+				}
+				currentState = currentState.parentState;
+				continue;
+			}
+			if (currentState.childrenStates.stream().noneMatch(childHasNullUtility)) {
+				Stream<Integer> childUtilities = currentState.childrenStates.stream()//
+						.map(child -> child.utilityOfState);
+				if (rootPlayer == currentState.currentPlayer) {
+					currentState.utilityOfState = childUtilities.max(Integer::compareTo).orElseThrow();
+				} else {
+					currentState.utilityOfState = childUtilities.min(Integer::compareTo).orElseThrow();
+				}
+				currentState = currentState.parentState;
+				continue;
+			}
+			currentState = currentState.childrenStates.stream().filter(childHasNullUtility).findFirst().orElseThrow();
+		}
+		return childrenStates.stream().filter(child -> child.utilityOfState.equals(utilityOfState)).findFirst().orElseThrow().moveFromParent;
 	}
 
 	public char getPieceAt(int posX, int posY) {
